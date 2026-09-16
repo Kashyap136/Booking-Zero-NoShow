@@ -5,7 +5,7 @@ import mongoose from 'mongoose';
 export const createStaff = async (req, res) => {
   try {
     const { name, phone, esslId, salary } = req.body;
-const companyId = req.companyId || req.body.companyId ||"652f1e1a1234567890abcdef";// from auth middleware, not from body
+const companyId = req.companyId || req.body.companyId ;// from auth middleware, not from body
 
     if (!name || !phone || !esslId || salary === undefined) {
       return res.status(400).json({ error: 'name, phone, esslId, salary are required' });
