@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, "SF Mono",
+    Menlo, Consolas, "Liberation Mono", monospace;
+
+  --color-brand-50: #eef2ff;
+  --color-brand-100: #e0e7ff;
+  --color-brand-200: #c7d2fe;
+  --color-brand-300: #a5b4fc;
+  --color-brand-400: #818cf8;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f46e5;
+  --color-brand-700: #4338ca;
+  --color-brand-800: #3730a3;
+  --color-brand-900: #312e81;
+
+  --color-surface: #ffffff;
+  --color-muted: #64748b;
+  --color-line: #e2e8f0;
+
+  --color-success: #16a34a;
+  --color-success-bg: #dcfce7;
+  --color-warning: #f59e0b;
+  --color-warning-bg: #fef3c7;
+  --color-danger: #dc2626;
+  --color-danger-bg: #fee2e2;
+  --color-info: #0284c7;
+  --color-info-bg: #e0f2fe;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.slim-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+.slim-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.slim-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+.slim-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.react-calendar {
+  border: none !important;
+  background: transparent !important;
+  font-family: inherit !important;
+}
+.react-calendar__navigation {
+  margin-bottom: 0.75rem !important;
+  height: 2.5rem !important;
+}
+.react-calendar__navigation button {
+  min-width: 2.5rem !important;
+  background: transparent !important;
+  border-radius: 0.5rem !important;
+  font-weight: 500 !important;
+}
+.react-calendar__navigation button:hover {
+  background: #eef2ff !important;
+}
+.react-calendar__navigation button:disabled {
+  opacity: 0.4 !important;
+}
+.react-calendar__month-view__weekdays {
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  color: #64748b !important;
+  text-transform: uppercase !important;
+  margin-bottom: 0.5rem !important;
+}
+.react-calendar__tile {
+  padding: 0.5rem 0.25rem !important;
+  border-radius: 0.5rem !important;
+  font-size: 0.875rem !important;
+  height: 2.5rem !important;
+  color: #334155 !important;
+}
+.react-calendar__tile:hover {
+  background: #eef2ff !important;
+}
+.react-calendar__tile--active {
+  background: #4f46e5 !important;
+  color: white !important;
+}
+.react-calendar__tile--now {
+  background: #f1f5f9 !important;
+}
+.react-calendar__month-view__days__day--neighboringMonth {
+  color: #cbd5e1 !important;
+}
