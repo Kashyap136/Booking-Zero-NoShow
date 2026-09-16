@@ -3,7 +3,7 @@ import express from "express";
 import {
     create,
     list
-} from "../controller/servicesController.js";
+} from "../controllers/servicesController.js";
 
 import {
     authMiddleware

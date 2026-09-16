@@ -1,6 +1,6 @@
-import Booking from "../Models/BookingModel.js";
-import Service from "../Models/ServiceModel.js";
-import Staff from "../Models/staffModel.js";
+import Booking from "../models/bookingModel.js";
+import Service from "../models/serviceModel.js";
+import Staff from "../models/staffModel.js"
 
 export const createBooking = async (req, res) => {
   try {

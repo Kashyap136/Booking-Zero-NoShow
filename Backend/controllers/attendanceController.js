@@ -1,5 +1,5 @@
-import Attendance from '../models/attendance.js';
-import Staff from '../models/staff.js';
+import Attendance from '../models/attendanceModel.js';
+import Staff from '../models/staffModel.js';
 
 // POST /api/attendance/sync
 // Called by eSSL biometric machine's software/webhook, not by frontend directly

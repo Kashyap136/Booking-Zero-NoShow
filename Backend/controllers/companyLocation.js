@@ -1,4 +1,4 @@
-import Company from "../Models/CompanyModel.js";
+import Company from "../models/companyModel.js";
 
 export const updateCompanyLocation = async (req, res) => {
   try {

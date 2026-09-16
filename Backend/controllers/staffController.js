@@ -1,4 +1,4 @@
-import Staff from '../models/staff.js';
+import Staff from '../models/staffModel.js';
 import mongoose from 'mongoose';
 
 // POST /api/staff/create

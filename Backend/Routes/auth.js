@@ -1,12 +1,12 @@
 import express from "express";
 import {
   updateCompanyLocation,
-} from "../controller/CompanyLocation.js"
+} from "../controllers/companyLocation.js";
 
 import {
     register,
     login
-} from "../controller/authController.js";
+} from "../controllers/authController.js";
 
 import {
     RegistrationMiddleware,

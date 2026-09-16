@@ -5,7 +5,7 @@ import {
   getBookings,
   getBookingStats,
   updateBookingStatus,
-} from "../controller/BookingController.js";
+} from "../controllers/bookingController.js";
 
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
