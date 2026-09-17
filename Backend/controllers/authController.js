@@ -4,61 +4,78 @@ import Company from "../models/companyModel.js";
 
 export const register = async (req, res) => {
   try {
-    const { name, subdomain, ownerEmail, password, upiId } = req.body;
+    const { name, email, phone, password } = req.body;
 
-   const normalizedEmail = ownerEmail.trim().toLowerCase();
+    // Required fields
+    if (!name || !email || !phone || !password) {
+      return res.status(400).json({
+        message: "Name, email, phone and password are required",
+      });
+    }
 
-    const normalizedSubdomain = subdomain.trim().toLowerCase();
+    const cleanEmail = email.trim().toLowerCase();
 
+    // Check email
     const existingCompany = await Company.findOne({
-      $or: [
-        {
-          ownerEmail: normalizedEmail,
-        },
-        {
-          subdomain: normalizedSubdomain,
-        },
-      ],
+      email: cleanEmail,
     });
 
     if (existingCompany) {
       return res.status(409).json({
-        message: "Company or email already exists",
+        message: "Email already exists",
       });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    // Hash password
+    const Password = await bcrypt.hash(password, 12);
 
-
+    // Create company
     const company = await Company.create({
       name: name.trim(),
-
-      subdomain: normalizedSubdomain,
-
-      ownerEmail: normalizedEmail,
-
-      passwordHash,
-
-      upiId: upiId ? upiId.trim() : null,
+      email: cleanEmail,
+      phone: phone.trim(),
+      Password,
     });
 
+    const companyId = company._id.toString();
+
+    // Token
+    const token = jwt.sign(
+      {
+        companyId,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "7d",
+      },
+    );
+
     return res.status(201).json({
-      message: "Company registered successfully",
+      message: "Registration successful",
+
+      token,
+
+      user: {
+        id: companyId,
+        name: company.name,
+        email: company.email,
+        role: "admin",
+        companyId,
+      },
 
       company: {
-        id: company._id,
-
+        id: companyId,
         name: company.name,
-
-        subdomain: company.subdomain,
-
-        ownerEmail: company.ownerEmail,
-
-        upiId: company.upiId,
       },
     });
   } catch (error) {
     console.log("Register error:", error);
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        message: "Email already exists",
+      });
+    }
 
     return res.status(500).json({
       message: "Server error",
@@ -66,16 +83,23 @@ export const register = async (req, res) => {
   }
 };
 
-
-
 export const login = async (req, res) => {
   try {
-    const { ownerEmail, password } = req.body;
+    const { email, password } = req.body;
 
-    const normalizedEmail = ownerEmail.trim().toLowerCase();
+    // Required fields
+    if (!email || !password) {
+      return res.status(400).json({
+        message: "Email and password are required",
+      });
+    }
 
+    // Clean email same as register
+    const cleanEmail = email.trim().toLowerCase();
+
+    // Find company
     const company = await Company.findOne({
-      ownerEmail: normalizedEmail,
+      email: cleanEmail,
     });
 
     if (!company) {
@@ -84,45 +108,50 @@ export const login = async (req, res) => {
       });
     }
 
-    const isPasswordCorrect = await bcrypt.compare(
+    // Compare password
+    // Register saves hashed password in `Password`
+    const passwordCorrect = await bcrypt.compare(
       password,
-      company.passwordHash,
+      company.Password
     );
 
-    if (!isPasswordCorrect) {
+    if (!passwordCorrect) {
       return res.status(401).json({
         message: "Invalid email or password",
       });
     }
 
+    const companyId = company._id.toString();
+
+    // Generate token
     const token = jwt.sign(
       {
-        companyId: company._id,
+        companyId,
+        role: company.role || "admin",
       },
-
       process.env.JWT_SECRET,
-
       {
         expiresIn: "7d",
-
         algorithm: "HS256",
-      },
+      }
     );
-
 
     return res.status(200).json({
       message: "Login successful",
 
       token,
 
-      company: {
-        id: company._id,
-
+      user: {
+        id: companyId,
         name: company.name,
+        email: company.email,
+        role: company.role || "admin",
+        companyId,
+      },
 
-        subdomain: company.subdomain,
-
-        ownerEmail: company.ownerEmail,
+      company: {
+        id: companyId,
+        name: company.name,
       },
     });
   } catch (error) {
@@ -133,5 +162,4 @@ export const login = async (req, res) => {
     });
   }
 };
-
 

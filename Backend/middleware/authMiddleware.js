@@ -13,43 +13,77 @@ export const validAuthMiddleware = (req, res, next) => {
 };
 
 
-export const   RegistrationMiddleware = (req, res, next) => {
-    const {
-        name,
-        subdomain,
-        ownerEmail,
-        password
-    } = req.body;
+export const RegistrationMiddleware = (req, res, next) => {
+  const { name, email, phone, password } = req.body;
 
-    if (!name || !subdomain || !ownerEmail || !password) {
-        return res.status(400).json({
-            message: "All required fields are required"
-        });
-    }
+  if (!name || !email || !phone || !password) {
+    return res.status(400).json({
+      message: "All fields are required",
+    });
+  }
 
-    if (password.length < 6) {
-        return res.status(400).json({
-            message: "Password must be at least 6 characters"
-        });
-    }
+  if (password.length < 6) {
+    return res.status(400).json({
+      message: "Password must be at least 6 characters",
+    });
+  }
 
-    next();
+  next();
 };
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const LoginMiddleware = (req, res, next) => {
-    const {
-        ownerEmail,
-        password
-    } = req.body;
+  try {
+    const { email, password } = req.body;
 
-    if (!ownerEmail || !password) {
-        return res.status(400).json({
-            message: "Email and password are required"
-        });
+    // Required fields
+    if (!email || !password) {
+      return res.status(400).json({
+        message: "Email and password are required",
+      });
     }
 
+    // Input type validation
+    if (
+      typeof email !== "string" ||
+      typeof password !== "string"
+    ) {
+      return res.status(400).json({
+        message: "Invalid input type",
+      });
+    }
+
+    // Clean email
+    const cleanEmail = email.trim().toLowerCase();
+
+    // Email validation
+    if (!EMAIL_REGEX.test(cleanEmail)) {
+      return res.status(400).json({
+        message: "Invalid email or password",
+      });
+    }
+
+    // Password length validation
+    if (password.length < 6 || password.length > 128) {
+      return res.status(400).json({
+        message: "Invalid email or password",
+      });
+    }
+
+    // Put cleaned email back into request
+    req.body.email = cleanEmail;
+
     next();
+  } catch (error) {
+    console.log("Login middleware error:", error);
+
+    return res.status(400).json({
+      message: "Invalid request",
+    });
+  }
 };
+
 
 
 

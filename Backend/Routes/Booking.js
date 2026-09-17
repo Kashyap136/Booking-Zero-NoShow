@@ -12,7 +12,7 @@ import { authMiddleware } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 // Create booking
-router.post("/create", authMiddleware, createBooking);
+router.post("/create",  createBooking);
 
 // Booking list
 router.get("/list", authMiddleware, getBookings);

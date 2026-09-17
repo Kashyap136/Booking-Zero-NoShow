@@ -1,0 +1,38 @@
+import axios from 'axios';
+
+const MESSAGES = {
+  reminder: (booking) => `Reminder: Your booking is tomorrow at ${booking.slot}. - ${booking.companyId}`,
+  'no-show': (booking) => `You missed your booking today at ${booking.slot}. Advance has been charged.`
+};
+
+export const sendSMS = async (phone, type, booking) => {
+  try {
+    const message = MESSAGES[type] ? MESSAGES[type](booking) : 'Notification from booking system';
+
+    const response = await axios.post(
+      'https://www.fast2sms.com/dev/bulkV2',
+      {
+        route: 'q',              // 'q' = quick/transactional test route; use DLT route in production
+        message,
+        language: 'unicode',     // needed for Hindi/Marathi characters
+        flash: 0,
+        numbers: phone
+      },
+      {
+        headers: {
+          authorization: process.env.FAST2SMS_KEY,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    if (response.data.return === true) {
+      return { success: true };
+    }
+    console.warn('Fast2SMS returned failure:', response.data);
+    return { success: false };
+  } catch (err) {
+    console.error('SMS send failed:', err.message);
+    return { success: false };
+  }
+};

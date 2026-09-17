@@ -1,12 +1,28 @@
 import Booking from "../models/bookingModel.js";
 import Service from "../models/serviceModel.js";
-import Staff from "../models/staffModel.js"
+import Staff from "../models/staffModel.js";
 
 export const createBooking = async (req, res) => {
   try {
-    const companyId = req.companyId;
-    const { customerName, phone, serviceId, bookingDate, slot } = req.body;
+    const { companyId, customerName, phone, serviceId, bookingDate, slot } =
+      req.body;
 
+    // Required fields
+    if (
+      !companyId ||
+      !customerName ||
+      !phone ||
+      !serviceId ||
+      !bookingDate ||
+      !slot
+    ) {
+      return res.status(400).json({
+        message:
+          "companyId, customerName, phone, serviceId, bookingDate and slot are required",
+      });
+    }
+
+    // Find service
     const service = await Service.findOne({
       _id: serviceId,
       companyId,
@@ -18,6 +34,7 @@ export const createBooking = async (req, res) => {
       });
     }
 
+    // Get staff from service
     const staffId = service.staffId;
 
     if (!staffId) {
@@ -26,6 +43,7 @@ export const createBooking = async (req, res) => {
       });
     }
 
+    // Check existing booking
     const existingBooking = await Booking.findOne({
       staffId,
       bookingDate,
@@ -37,10 +55,12 @@ export const createBooking = async (req, res) => {
         message: "Slot booked",
       });
     }
-    const totalAmount = service.price;
 
+    // Calculate amount
+    const totalAmount = service.price;
     const advanceAmount = totalAmount * 0.2;
 
+    // Create booking
     const booking = await Booking.create({
       companyId,
       customerName,
@@ -55,12 +75,12 @@ export const createBooking = async (req, res) => {
 
     return res.status(201).json({
       message: "Booking created successfully",
-
       booking,
     });
   } catch (error) {
     console.log("Create booking error:", error);
 
+    // Duplicate booking protection
     if (error.code === 11000) {
       return res.status(409).json({
         message: "Slot booked",
@@ -121,35 +141,70 @@ export const getBookingStats = async (req, res) => {
 export const updateBookingStatus = async (req, res) => {
   try {
     const companyId = req.companyId;
+
     const { bookingId, status } = req.body;
+
+    // 1. Validate input
+    if (!bookingId || !status) {
+      return res.status(400).json({
+        message: "bookingId and status are required",
+      });
+    }
+
+    // 2. Allowed statuses
     const allowedStatuses = ["completed", "no-show", "cancelled"];
+
     if (!allowedStatuses.includes(status)) {
-      return res
-        .status(400)
-        .json({ message: "Status must be completed, no-show or cancelled" });
+      return res.status(400).json({
+        message: "Status must be completed, no-show or cancelled",
+      });
     }
-    const booking = await Booking.findOne({ _id: bookingId, companyId });
+
+    // 3. Find booking for this company
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      companyId,
+    });
+
     if (!booking) {
-      return res.status(404).json({ message: "Booking not found" });
+      return res.status(404).json({
+        message: "Booking not found",
+      });
     }
+
+    // 4. No-show
     if (status === "no-show") {
       booking.status = "no-show";
-      booking.advanceAmount = booking.advanceAmount;
+
+      // Advance amount was already calculated
+      // during booking creation (20%).
+      const chargedAdvance = booking.advanceAmount;
+
       await booking.save();
-      return res
-        .status(200)
-        .json({
-          message: "Booking marked as no-show. Advance charged.",
-          booking,
-        });
+
+      return res.status(200).json({
+        message: "Booking marked as no-show. Advance charged.",
+        bookingId: booking._id,
+        status: booking.status,
+        advanceAmount: chargedAdvance,
+      });
     }
+
+    // 5. Completed / Cancelled
     booking.status = status;
+
     await booking.save();
-    return res
-      .status(200)
-      .json({ message: `Booking marked as ${status}`, booking });
+
+    return res.status(200).json({
+      message: `Booking marked as ${status}`,
+      bookingId: booking._id,
+      status: booking.status,
+    });
   } catch (error) {
     console.log("Update booking status error:", error);
-    return res.status(500).json({ message: "Server error" });
+
+    return res.status(500).json({
+      message: "Server error",
+    });
   }
 };

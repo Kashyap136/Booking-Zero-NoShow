@@ -1,12 +1,12 @@
 import cron from 'node-cron';
 import Booking from './models/bookingModel.js';
-// import { sendWhatsAppMessage } from './controllers/whatsapp.js'; // teammate ye banayega
-// import { sendSMS } from './utils/sms.js';
+import { sendWhatsApp } from './controllers/whatsapp.js';
+import { sendSMS } from './utils/sms.js';
 
 // helper - din ke start (00:00:00) se end (23:59:59) tak ka range banata hai
 const getDateRange = (date) => {
   const start = new Date(date);
-  start.setHours(0, 0, 0, 0);
+  start.setHours(0, 0, 0, 0);             
   const end = new Date(date);
   end.setHours(23, 59, 59, 999);
   return { start, end };

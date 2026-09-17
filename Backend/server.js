@@ -12,6 +12,7 @@ import bookingRouter from "./routes/booking.js";
 import routerStaff from "./routes/staff.js";
 import routerAttendance from "./routes/attendance.js";
 import { startCronJobs } from "./cron.js";
+import whatsappRouter from "./routes/whatsapp.js";
 
 const app = express();
 
@@ -36,6 +37,10 @@ mongoose
     app.use("/api/booking", bookingRouter);
     app.use("/api/staff", routerStaff);
     app.use("/api/attendance", routerAttendance);
+    app.use(
+  "/api/whatsapp",
+  whatsappRouter
+);
 
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
