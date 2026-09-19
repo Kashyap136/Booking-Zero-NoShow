@@ -22,5 +22,6 @@ router.get("/stats", authMiddleware, getBookingStats);
 
 // Update status
 router.post("/status", authMiddleware, updateBookingStatus);
+router.post("/update-status", authMiddleware, updateBookingStatus);
 
 export default router;

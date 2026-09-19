@@ -33,11 +33,23 @@ interface StaffOption {
 }
 
 function normalizeServices(raw: unknown): Service[] {
-  if (Array.isArray(raw)) return raw as Service[];
-  const d = raw as Record<string, unknown>;
-  if (Array.isArray(d?.services)) return d.services as Service[];
-  if (Array.isArray(d?.data)) return d.data as Service[];
-  return [];
+  const items = Array.isArray(raw)
+    ? raw
+    : ((raw as Record<string, unknown>)?.services as unknown[]) ??
+      ((raw as Record<string, unknown>)?.data as unknown[]) ??
+      [];
+  return items.map((item) => {
+    const s = item as Record<string, unknown>;
+    return {
+      id: String(s._id ?? s.id ?? ""),
+      name: (s.title as string) ?? (s.name as string) ?? "",
+      category: (s.category as string) ?? "",
+      duration: Number(s.durationMins ?? s.duration ?? 0),
+      price: Number(s.price ?? 0),
+      staffName: (s.staffName as string) ?? "",
+      staffId: String(s.staffId ?? ""),
+    };
+  });
 }
 
 function normalizeStaff(raw: unknown): StaffOption[] {
@@ -81,8 +93,15 @@ export default function ServicesPage() {
         api.get("/api/services/list", { params: { companyId } }),
         api.get("/api/staff/list", { params: { companyId } }),
       ]);
-      setServices(normalizeServices(svcRes.data));
-      setStaffOptions(normalizeStaff(staffRes.data));
+      const options = normalizeStaff(staffRes.data);
+      const byId = new Map(options.map((s) => [s.id, s.name]));
+      setServices(
+        normalizeServices(svcRes.data).map((service) => ({
+          ...service,
+          staffName: service.staffName || byId.get(service.staffId) || "—",
+        })),
+      );
+      setStaffOptions(options);
     } catch (err) {
       setError(toApiError(err));
     } finally {
@@ -123,8 +142,8 @@ export default function ServicesPage() {
       const companyId = getCompanyId();
       await api.post("/api/services/create", {
         companyId,
-        name: formName.trim(),
-        duration: Number(formDuration),
+        title: formName.trim(),
+        durationMins: Number(formDuration),
         price: Number(formPrice),
         category: formCategory.trim(),
         staffId: formStaffId,

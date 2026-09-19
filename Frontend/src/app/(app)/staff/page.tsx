@@ -25,11 +25,21 @@ interface StaffMember {
 }
 
 function normalizeStaff(raw: unknown): StaffMember[] {
-  if (Array.isArray(raw)) return raw as StaffMember[];
-  const d = raw as Record<string, unknown>;
-  if (Array.isArray(d?.staff)) return d.staff as StaffMember[];
-  if (Array.isArray(d?.data)) return d.data as StaffMember[];
-  return [];
+  const items = Array.isArray(raw)
+    ? raw
+    : ((raw as Record<string, unknown>)?.staff as unknown[]) ??
+      ((raw as Record<string, unknown>)?.data as unknown[]) ??
+      [];
+  return items.map((item) => {
+    const s = item as Record<string, unknown>;
+    return {
+      id: String(s._id ?? s.id ?? ""),
+      name: (s.name as string) ?? "",
+      phone: (s.phone as string) ?? "",
+      eSSLId: (s.esslId as string) ?? (s.eSSLId as string) ?? "",
+      salary: Number(s.salary ?? 0),
+    };
+  });
 }
 
 const COLUMNS = [
@@ -101,7 +111,7 @@ export default function StaffPage() {
         companyId: getCompanyId(),
         name: formName.trim(),
         phone: formPhone.trim(),
-        eSSLId: formEssl.trim(),
+        esslId: formEssl.trim(),
         salary: Number(formSalary),
       });
       addToast("Staff member added", "success");

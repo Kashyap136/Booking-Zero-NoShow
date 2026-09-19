@@ -20,4 +20,12 @@ router.get('/list', listAttendance);
 router.get('/:id', getAttendance);
 router.put('/:id', updateAttendance);
 
+// Frontend POST-based update (body me attendanceId + clockIn/clockOut bhejta hai)
+router.post('/update', (req, res, next) => {
+  req.params.id = req.body.attendanceId;
+  if (req.body.clockIn !== undefined) req.body.inTime = req.body.clockIn;
+  if (req.body.clockOut !== undefined) req.body.outTime = req.body.clockOut;
+  next();
+}, updateAttendance);
+
 export default router;

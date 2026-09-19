@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getAppSettings, saveAppSettings, sendTestAlert } from "@/lib/settings";
+import { getAppSettings, saveAppSettings, sendTestAlert, saveUpiId, saveLanguage, getSettings } from "@/lib/settings";
 import type { AppSettings } from "@/lib/settings";
 import PageHeader from "@/components/ui/PageHeader";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
+import { toApiError } from "@/lib/api";
 import { Settings as SettingsIcon, Send } from "lucide-react";
 
 export default function SettingsPage() {
@@ -16,10 +17,35 @@ export default function SettingsPage() {
   const [testPhone, setTestPhone] = useState("");
   const [testLoading, setTestLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [languageSaving, setLanguageSaving] = useState<"en" | "mr" | "hi" | null>(null);
 
+  // Load persisted settings (language, UPI) from the backend on mount.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSettings(getAppSettings());
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const server = await getSettings();
+        if (cancelled) return;
+
+        setSettings((prev) => ({
+          ...prev,
+          upiId: server.upiId ?? "",
+          language: server.language ?? prev.language,
+        }));
+
+        saveAppSettings({
+          upiId: server.upiId ?? "",
+          language: server.language ?? getAppSettings().language,
+        });
+      } catch {
+        // Backend unreachable: keep the localStorage fallback.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   function update<K extends keyof AppSettings>(key: K, value: AppSettings[K]) {
@@ -30,15 +56,50 @@ export default function SettingsPage() {
     setTimeout(() => setSaved(false), 2000);
   }
 
+  async function handleLanguageSelect(value: "en" | "mr" | "hi") {
+    if (value === settings.language || languageSaving !== null) return;
+
+    const previous = settings.language;
+    setLanguageSaving(value);
+
+    // Optimistic update so the selection feels instant.
+    setSettings((prev) => ({ ...prev, language: value }));
+    saveAppSettings({ language: value });
+
+    try {
+      await saveLanguage(value);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      setSettings((prev) => ({ ...prev, language: previous }));
+      saveAppSettings({ language: previous });
+      addToast(
+        toApiError(err).message || "Unable to save language preference. Please try again.",
+        "error",
+      );
+    } finally {
+      setLanguageSaving(null);
+    }
+  }
+
   async function handleTestAlert() {
     setTestLoading(true);
     try {
       await sendTestAlert(testPhone);
-      addToast("Test alert sent (stub)", "success");
+      addToast("Test alert sent", "success");
     } catch (err) {
-      addToast((err as Error).message || "Test alert failed", "error");
+      addToast(toApiError(err).message || "Test alert failed", "error");
     } finally {
       setTestLoading(false);
+    }
+  }
+
+  async function handleUpiBlur() {
+    try {
+      await saveUpiId(settings.upiId);
+      addToast("UPI ID saved", "success");
+    } catch (err) {
+      addToast(toApiError(err).message || "Failed to save UPI ID", "error");
     }
   }
 
@@ -48,7 +109,7 @@ export default function SettingsPage() {
 
       {saved && (
         <div className="mb-4 rounded-lg bg-success-bg px-4 py-2 text-sm text-success">
-          Settings saved locally.
+          Settings saved.
         </div>
       )}
 
@@ -94,26 +155,30 @@ export default function SettingsPage() {
         <Card className="p-5">
           <h3 className="text-base font-semibold text-foreground mb-4">Language</h3>
           <div className="flex flex-wrap gap-3">
-            {[
-              { value: "en" as const, label: "English" },
-              { value: "mr" as const, label: "Marathi" },
-              { value: "hi" as const, label: "Hindi" },
-            ].map((lang) => (
+            {(
+              [
+                { value: "en", label: "English" },
+                { value: "mr", label: "Marathi" },
+                { value: "hi", label: "Hindi" },
+              ] as const
+            ).map((lang) => (
               <button
                 key={lang.value}
-                onClick={() => update("language", lang.value)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                onClick={() => handleLanguageSelect(lang.value)}
+                disabled={languageSaving !== null}
+                className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                   settings.language === lang.value
                     ? "bg-brand-50 border-brand-300 text-brand-700"
                     : "border-line bg-white text-muted hover:bg-gray-50"
                 }`}
               >
                 {lang.label}
+                {languageSaving === lang.value ? " • Saving…" : ""}
               </button>
             ))}
           </div>
           <p className="text-xs text-muted mt-3">
-            Language preference is saved locally. Backend integration will apply this to notifications.
+            Your language preference is saved to your account and used for booking notification messages (WhatsApp and SMS).
           </p>
         </Card>
 
@@ -124,7 +189,8 @@ export default function SettingsPage() {
             placeholder="e.g. yourname@upi"
             value={settings.upiId}
             onChange={(e) => update("upiId", e.target.value)}
-            hint="For payment collection links in booking notifications."
+            onBlur={handleUpiBlur}
+            hint="Saved to your account and used for UPI payment links in booking notifications."
           />
         </Card>
 

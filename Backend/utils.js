@@ -1,19 +1,21 @@
 import axios from 'axios';
 
-const MESSAGES = {
-  reminder: (booking) => `Reminder: Your booking is tomorrow at ${booking.slot}. - ${booking.companyId}`,
-  'no-show': (booking) => `You missed your booking today at ${booking.slot}. Advance has been charged.`
-};
-
-export const sendSMS = async (phone, type, booking) => {
+// Transport only. Message content is prepared by
+// `Backend/notifications/messages.js` (buildSmsMessage) so the company's
+// selected language is used. Fast2SMS is called with `language: 'unicode'`
+// because Hindi/Marathi need Unicode text. Note: delivery of Hindi/Marathi
+// depends on the FAST2SMS account and route ("q"/DLT) supporting Unicode;
+// if the provider rejects Devanagari text the message is still sent but may
+// be garbled on the handset.
+export const sendSMS = async (phone, message) => {
   try {
-    const message = MESSAGES[type] ? MESSAGES[type](booking) : 'Notification from booking system';
+    const body = message || 'Notification from booking system';
 
     const response = await axios.post(
       'https://www.fast2sms.com/dev/bulkV2',
       {
         route: 'q',              // 'q' = quick/transactional test route; use DLT route in production
-        message,
+        message: body,
         language: 'unicode',     // needed for Hindi/Marathi characters
         flash: 0,
         numbers: phone

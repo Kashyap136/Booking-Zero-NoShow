@@ -1,3 +1,5 @@
+import { api } from "./api";
+
 export interface AppSettings {
   whatsappEnabled: boolean;
   smsEnabled: boolean;
@@ -34,12 +36,26 @@ export function saveAppSettings(settings: Partial<AppSettings>): void {
   );
 }
 
+// Backend is the source of truth for persisted settings (language, upiId).
+// localStorage is used only as an offline fallback while a page is loading.
+export interface ServerSettings {
+  upiId: string;
+  language: "en" | "mr" | "hi";
+}
+
+export async function getSettings(): Promise<ServerSettings> {
+  const res = await api.get<ServerSettings>("/api/auth/settings");
+  return res.data;
+}
+
+export async function saveLanguage(language: "en" | "mr" | "hi"): Promise<void> {
+  await api.put("/api/auth/settings", { language });
+}
+
 export async function sendTestAlert(phone: string): Promise<void> {
-  void phone; // Will be used when backend integration is connected
-  // Backend stub — will call POST /api/whatsapp/send when backend is ready.
-  // Keeping placeholder here so pages can call without wrapping in try/catch.
-  await new Promise((r) => setTimeout(r, 600));
-  throw new Error(
-    "WhatsApp API not connected yet. Test alert pending backend integration.",
-  );
+  await api.post("/api/whatsapp/test", { phone });
+}
+
+export async function saveUpiId(upiId: string): Promise<void> {
+  await api.put("/api/auth/settings", { upiId });
 }

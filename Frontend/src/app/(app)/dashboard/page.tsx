@@ -43,17 +43,24 @@ function normalizeStats(raw: unknown): StatsData {
 
   const stats = (d.stats ?? d) as Record<string, unknown>;
 
+  const total =
+    (stats.todayBookings as number) ??
+    (stats.totalBookings as number) ??
+    (stats.total as number) ??
+    (stats.bookings as number) ??
+    0;
+
+  const rated =
+    (stats.noShowRate as number) ?? (stats.noShowPercentage as number);
+
+  const noShowCount = (stats.noShow as number) ?? 0;
+
+  const noShowRate =
+    rated ?? (total > 0 ? Math.round((noShowCount / total) * 100) : 0);
+
   return {
-    totalBookings:
-      (stats.todayBookings as number) ??
-      (stats.totalBookings as number) ??
-      (stats.bookings as number) ??
-      0,
-    noShowRate:
-      (stats.noShowRate as number) ??
-      (stats.noShowPercentage as number) ??
-      (stats.noShow as number) ??
-      0,
+    totalBookings: total,
+    noShowRate,
     revenueToday:
       (stats.revenueToday as number) ??
       (stats.revenue as number) ??

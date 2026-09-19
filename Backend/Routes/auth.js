@@ -5,7 +5,11 @@ import {
 
 import {
     register,
-    login
+    login,
+    forgotPassword,
+    resetPassword,
+    updateSettings,
+    getSettings
 } from "../controllers/authController.js";
 
 import {
@@ -24,15 +28,37 @@ router.post(
 
 
 router.post(
-    "/login",
-    LoginMiddleware,
-    login
+  "/login",
+  LoginMiddleware,
+  login
+);
+
+router.post(
+  "/forgot-password",
+  forgotPassword
+);
+
+router.post(
+  "/reset-password",
+  resetPassword
 );
 
 router.put(
   "/location",
   authMiddleware,
   updateCompanyLocation
+);
+
+router.put(
+  "/settings",
+  authMiddleware,
+  updateSettings
+);
+
+router.get(
+  "/settings",
+  authMiddleware,
+  getSettings
 );
 
 export default router;

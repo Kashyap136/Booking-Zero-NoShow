@@ -28,6 +28,33 @@ const companySchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+
+    latitude: {
+      type: Number,
+    },
+
+    longitude: {
+      type: Number,
+    },
+
+    resetPasswordToken: {
+      type: String,
+    },
+
+    resetPasswordExpires: {
+      type: Date,
+    },
+
+    upiId: {
+      type: String,
+      trim: true,
+    },
+
+    language: {
+      type: String,
+      enum: ["en", "hi", "mr"],
+      default: "en",
+    },
   },
   {
     timestamps: true,

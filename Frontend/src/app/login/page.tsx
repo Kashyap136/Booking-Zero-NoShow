@@ -195,7 +195,20 @@ export default function LoginPage() {
               placeholder={mode === "register" ? "Min. 6 characters" : "Enter your password"}
               required
               autoComplete={mode === "login" ? "current-password" : "new-password"}
+              showToggle
             />
+
+            {mode === "login" && (
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => router.push("/forgot-password")}
+                  className="text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors"
+                >
+                  Forgot password?
+                </button>
+              </div>
+            )}
 
             <Button
               type="submit"

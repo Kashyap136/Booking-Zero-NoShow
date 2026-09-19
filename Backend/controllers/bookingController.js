@@ -104,7 +104,17 @@ export const getBookings = async (req, res) => {
       .populate("serviceId", "title price durationMins")
       .populate("staffId", "name email")
       .sort({ slot: 1 });
-    return res.status(200).json({ date, count: bookings.length, bookings });
+
+    const normalized = bookings.map((booking) => ({
+      ...booking.toObject(),
+      id: booking._id.toString(),
+      serviceName: booking.serviceId?.title || "",
+      staffName: booking.staffId?.name || "",
+    }));
+
+    return res
+      .status(200)
+      .json({ date, count: bookings.length, bookings: normalized });
   } catch (error) {
     console.log("Get bookings error:", error);
     return res.status(500).json({ message: "Server error" });
@@ -152,11 +162,11 @@ export const updateBookingStatus = async (req, res) => {
     }
 
     // 2. Allowed statuses
-    const allowedStatuses = ["completed", "no-show", "cancelled"];
+    const allowedStatuses = ["booked", "completed", "no-show", "cancelled"];
 
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
-        message: "Status must be completed, no-show or cancelled",
+        message: "Status must be booked, completed, no-show or cancelled",
       });
     }
 
@@ -174,6 +184,17 @@ export const updateBookingStatus = async (req, res) => {
 
     // 4. No-show
     if (status === "no-show") {
+      // Guard against double-charging the advance when a booking is
+      // already marked as no-show.
+      if (booking.status === "no-show") {
+        return res.status(200).json({
+          message: "Booking was already marked as no-show. No additional charge.",
+          bookingId: booking._id,
+          status: booking.status,
+          advanceAmount: booking.advanceAmount,
+        });
+      }
+
       booking.status = "no-show";
 
       // Advance amount was already calculated
@@ -190,7 +211,7 @@ export const updateBookingStatus = async (req, res) => {
       });
     }
 
-    // 5. Completed / Cancelled
+    // 5. Completed / Cancelled / Booked
     booking.status = status;
 
     await booking.save();

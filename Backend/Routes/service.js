@@ -2,7 +2,9 @@ import express from "express";
 
 import {
     create,
-    list
+    list,
+    update,
+    remove
 } from "../controllers/servicesController.js";
 
 import {
@@ -24,6 +26,17 @@ router.get(
     list
 );
 
+router.post(
+    "/update",
+    authMiddleware,
+    update
+);
+
+router.post(
+    "/delete",
+    authMiddleware,
+    remove
+);
+
 
 export default router;
-

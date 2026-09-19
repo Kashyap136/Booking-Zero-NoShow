@@ -55,10 +55,6 @@ export function isAuthenticated(): boolean {
   return !!getSession();
 }
 
-export function isAdmin(): boolean {
-  return getSession()?.user?.role?.toLowerCase() === "admin";
-}
-
 export function subscribe(cb: Listener): () => void {
   listeners.add(cb);
   return () => {
@@ -124,6 +120,6 @@ export async function register(
 export function logout() {
   setSession(null);
   if (typeof window !== "undefined") {
-    fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    api.post("/api/auth/logout").catch(() => {});
   }
 }

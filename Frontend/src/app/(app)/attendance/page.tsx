@@ -24,13 +24,36 @@ interface AttendanceRecord {
   status: string;
 }
 
+function toDateKey(value: unknown): string {
+  if (!value) return "";
+  const s = String(value);
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  const d = new Date(value as string);
+  return isNaN(d.getTime()) ? s : d.toISOString().slice(0, 10);
+}
+
 function normalizeAttendance(raw: unknown): AttendanceRecord[] {
-  if (Array.isArray(raw)) return raw as AttendanceRecord[];
-  const d = raw as Record<string, unknown>;
-  if (Array.isArray(d?.attendance)) return d.attendance as AttendanceRecord[];
-  if (Array.isArray(d?.records)) return d.records as AttendanceRecord[];
-  if (Array.isArray(d?.data)) return d.data as AttendanceRecord[];
-  return [];
+  const items = Array.isArray(raw)
+    ? raw
+    : ((raw as Record<string, unknown>)?.attendance as unknown[]) ??
+      ((raw as Record<string, unknown>)?.records as unknown[]) ??
+      ((raw as Record<string, unknown>)?.data as unknown[]) ??
+      [];
+  return items.map((item) => {
+    const r = item as Record<string, unknown>;
+    const staff =
+      typeof r.staffId === "object" && r.staffId != null
+        ? (r.staffId as Record<string, unknown>)
+        : null;
+    return {
+      id: String(r._id ?? r.id ?? ""),
+      staffName: (staff?.name as string) ?? (r.staffName as string) ?? "",
+      date: toDateKey(r.date),
+      clockIn: (r.inTime as string) ?? (r.clockIn as string) ?? "",
+      clockOut: (r.outTime as string) ?? (r.clockOut as string) ?? "",
+      status: String(r.status ?? ""),
+    };
+  });
 }
 
 const COLUMNS = [

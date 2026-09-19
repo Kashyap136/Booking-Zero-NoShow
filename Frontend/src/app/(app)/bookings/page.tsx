@@ -17,7 +17,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import ErrorState from "@/components/ui/ErrorState";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { Plus, CalendarDays } from "lucide-react";
+import { Plus, CalendarDays, CheckCircle2, XCircle, UserX } from "lucide-react";
 
 interface Booking {
   id: string;
@@ -204,6 +204,22 @@ export default function BookingsPage() {
 
   const calendarValue = useMemo<CalendarValue>(() => selectedDate, [selectedDate]);
 
+  const updateStatus = useCallback(
+    async (booking: Booking, status: "completed" | "no-show" | "cancelled") => {
+      try {
+        const res = await api.post<{ message: string }>("/api/bookings/status", {
+          bookingId: booking.id,
+          status,
+        });
+        addToast(res.data?.message || `Booking marked as ${status}`, "success");
+        await fetchMonth();
+      } catch (err) {
+        addToast(toApiError(err).message, "error");
+      }
+    },
+    [addToast, fetchMonth],
+  );
+
   const columns = useMemo(
     () => [
       { key: "customerName", header: "Customer" },
@@ -217,8 +233,43 @@ export default function BookingsPage() {
           <Badge variant={bookingStatusVariant(item.status)}>{item.status}</Badge>
         ),
       },
+      {
+        key: "actions",
+        header: "Update",
+        render: (item: Booking) => {
+          if (item.status?.toLowerCase() !== "booked") return null;
+          return (
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => updateStatus(item, "completed")}
+                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-success border border-line hover:bg-success-bg transition-colors"
+                title="Mark as completed"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" /> Complete
+              </button>
+              <button
+                type="button"
+                onClick={() => updateStatus(item, "no-show")}
+                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-danger border border-line hover:bg-danger-bg transition-colors"
+                title="Mark as no-show (charge advance)"
+              >
+                <UserX className="h-3.5 w-3.5" /> No-show
+              </button>
+              <button
+                type="button"
+                onClick={() => updateStatus(item, "cancelled")}
+                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted border border-line hover:bg-gray-100 transition-colors"
+                title="Mark as cancelled"
+              >
+                <XCircle className="h-3.5 w-3.5" /> Cancel
+              </button>
+            </div>
+          );
+        },
+      },
     ],
-    [],
+    [updateStatus],
   );
 
   return (

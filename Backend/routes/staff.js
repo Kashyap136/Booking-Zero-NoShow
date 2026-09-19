@@ -19,4 +19,15 @@ router.get('/:id', getStaff);
 router.put('/:id', updateStaff);
 router.delete('/:id', deleteStaff);
 
+// Frontend POST-based update/delete (body me staffId bhejta hai)
+router.post('/update', (req, res, next) => {
+  req.params.id = req.body.staffId;
+  next();
+}, updateStaff);
+
+router.post('/delete', (req, res, next) => {
+  req.params.id = req.body.staffId;
+  next();
+}, deleteStaff);
+
 export default router;
