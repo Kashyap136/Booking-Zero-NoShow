@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const MESSAGES = {
-  reminder: (booking) => `Reminder: Your booking is tomorrow at ${booking.slot}. - ${booking.companyId}`,
+ reminder: (booking) => `Reminder: Your booking is tomorrow at ${booking.slot}.`,
   'no-show': (booking) => `You missed your booking today at ${booking.slot}. Advance has been charged.`
 };
 

@@ -4,87 +4,60 @@ import Booking from "../models/bookingModel.js";
 import Company from "../models/companyModel.js";
 import Service from "../models/serviceModel.js";
 
-export const sendWhatsApp = async (req, res) => {
+// Core function - reusable hai, cron aur route dono isko use karte hain
+// Returns { success: true/false, ... } - res object nahi (isliye cron se bhi call ho sakta hai)
+export const sendWhatsAppMessage = async (bookingId, type, language = "en") => {
   try {
-    const { bookingId, type, language = "en" } = req.body;
-
     // -----------------------------
     // 1. Validate input
     // -----------------------------
-
     if (!bookingId) {
-      return res.status(400).json({
-        message: "bookingId is required",
-      });
+      return { success: false, message: "bookingId is required" };
     }
 
     if (!type) {
-      return res.status(400).json({
-        message: "type is required",
-      });
+      return { success: false, message: "type is required" };
     }
 
     const allowedTypes = ["confirmation", "reminder", "no-show", "upsell"];
-
     if (!allowedTypes.includes(type)) {
-      return res.status(400).json({
-        message: "Invalid type",
-        allowedTypes,
-      });
+      return { success: false, message: "Invalid type" };
     }
 
     const allowedLanguages = ["en", "hi", "mr"];
-
     if (!allowedLanguages.includes(language)) {
-      return res.status(400).json({
-        message: "Invalid language",
-        allowedLanguages,
-      });
+      return { success: false, message: "Invalid language" };
     }
 
     // -----------------------------
     // 2. Find booking
     // -----------------------------
-
     const booking = await Booking.findById(bookingId);
-
     if (!booking) {
-      return res.status(404).json({
-        message: "Booking not found",
-      });
+      return { success: false, message: "Booking not found" };
     }
-    console.log("FULL BOOKING:", booking);
-console.log("booking.companyId:", booking.companyId);
 
     // -----------------------------
     // 3. Find company
     // -----------------------------
-
     const company = await Company.findById(booking.companyId);
-    console.log("companayId is ", company);
     if (!company) {
-      return res.status(404).json({
-        message: "Company not found",
-      });
+      return { success: false, message: "Company not found" };
     }
 
     // -----------------------------
     // 4. Company location
     // -----------------------------
-
     const latitude = Number(company.latitude);
     const longitude = Number(company.longitude);
 
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-      return res.status(400).json({
-        message: "Company location is not available",
-      });
+      return { success: false, message: "Company location is not available" };
     }
 
     // -----------------------------
     // 5. Google Maps link
     // -----------------------------
-
     const mapLink =
       `https://www.google.com/maps/search/?api=1&query=` +
       `${encodeURIComponent(`${latitude},${longitude}`)}`;
@@ -92,35 +65,24 @@ console.log("booking.companyId:", booking.companyId);
     // -----------------------------
     // 6. Find service
     // -----------------------------
-
     const service = await Service.findById(booking.serviceId);
 
     // -----------------------------
     // 7. Customer phone
     // -----------------------------
-
     if (!booking.phone) {
-      return res.status(400).json({
-        message: "Customer phone number not found",
-      });
+      return { success: false, message: "Customer phone number not found" };
     }
 
     // -----------------------------
     // 8. Create message
     // -----------------------------
-
     let message = "";
-
     const customerName = booking.customerName || "Customer";
-
     const companyName = company.name || "Our Company";
-
     const serviceName = service?.name || "Service";
 
-    // =============================
-    // ENGLISH
-    // =============================
-
+    // ===== ENGLISH =====
     if (language === "en") {
       if (type === "confirmation") {
         message = `Hello ${customerName},
@@ -187,10 +149,7 @@ ${companyName}`;
       }
     }
 
-    // =============================
-    // HINDI
-    // =============================
-
+    // ===== HINDI =====
     if (language === "hi") {
       if (type === "confirmation") {
         message = `नमस्ते ${customerName},
@@ -258,10 +217,7 @@ ${companyName}`;
       }
     }
 
-    // =============================
-    // MARATHI
-    // =============================
-
+    // ===== MARATHI =====
     if (language === "mr") {
       if (type === "confirmation") {
         message = `नमस्कार ${customerName},
@@ -332,7 +288,6 @@ ${companyName}`;
     // -----------------------------
     // 9. WhatsApp API
     // -----------------------------
-
     const url =
       `https://graph.facebook.com/` +
       `${process.env.WHATSAPP_API_VERSION || "v23.0"}/` +
@@ -359,40 +314,46 @@ ${companyName}`;
     );
 
     // -----------------------------
-    // 10. Response
+    // 10. Return success
     // -----------------------------
-
-    return res.status(200).json({
+    return {
       success: true,
       message: "WhatsApp message sent successfully",
-
       bookingId: booking._id,
-
       type,
       language,
-
       customer: {
         name: booking.customerName,
         phone: booking.phone,
       },
-
       company: {
         name: company.name,
         latitude,
         longitude,
       },
-
       mapLink,
-
       whatsappResponse: response.data,
-    });
+    };
   } catch (error) {
     console.error("WhatsApp Error:", error.response?.data || error.message);
-
-    return res.status(500).json({
+    return {
       success: false,
       message:
         error.response?.data?.error?.message || error.message || "Server error",
-    });
+    };
   }
+};
+
+// Route handler - POST /api/whatsapp/send ke liye
+// Andar se sendWhatsAppMessage hi call karta hai, sirf HTTP response wrap karta hai
+export const sendWhatsApp = async (req, res) => {
+  const { bookingId, type, language = "en" } = req.body;
+
+  const result = await sendWhatsAppMessage(bookingId, type, language);
+
+  if (!result.success) {
+    return res.status(400).json(result);
+  }
+
+  return res.status(200).json(result);
 };
